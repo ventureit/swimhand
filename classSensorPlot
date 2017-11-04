@@ -1,0 +1,158 @@
+import socket
+import json
+import matplotlib.pyplot as plt
+import matplotlib.animation as animation
+from matplotlib import style
+import time
+import numpy as np
+from scipy.interpolate import spline
+
+# Connection
+HOST = '192.168.0.11'
+PORT = 4444
+
+
+fig = plt.figure()
+sensor_plot = fig.add_subplot(1, 1, 1)
+x_axis_start = 0
+x_axis_end = 10
+sensor_plot.axis([x_axis_start, x_axis_end, -50, 50])
+
+ts = [1, 2, 3]
+xs = [1, 2, 3]
+ys = [1, 2, 3]
+zs = [1, 2, 3]
+ts_smooth = [1, 2, 3]
+xs_smooth = [1, 2, 3]
+ys_smooth = [1, 2, 3]
+zs_smooth = [1, 2, 3]
+
+# Data Management
+start = time.time()
+
+class SensorPlot:
+    def __init__(self):
+        # self.HOST = HOST
+        # self.PORT = PORT
+
+
+        # Setup the figure
+
+        style.use('fivethirtyeight')
+
+    def initConnection(self):
+
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s.bind((HOST, PORT))
+
+        # Accept Connection
+        s.listen(1)
+        conn, addr = s.accept()
+        data = conn.recv(1024)
+
+        # print('Connection' + str(conn) + 'Address' + str(addr))
+        return data
+
+    def stopWatch(value):
+        '''From seconds to Days;Hours:Minutes;Seconds'''
+        valueD = (((value/365)/24)/60)
+        Days = int (valueD)
+
+        valueH = (valueD-Days)*365
+        Hours = int(valueH)
+
+        valueM = (valueH - Hours)*24
+        Minutes = int(valueM)
+
+        valueS = (valueM - Minutes)*60
+        Seconds = int(valueS)
+
+        return valueS
+
+        # print(Days,";",Hours,":",Minutes,";",Seconds)
+
+
+    def update(self, ts, xs, ys, zs, ts_smooth, xs_smooth, ys_smooth, zs_smooth, start):
+
+        # g = SensorPlot()
+        data = self.initConnection()
+        dataJSON = json.loads(data.decode('utf-8'))
+        dataListXYZ = list(dataJSON[0].values())
+
+        dataListX = dataListXYZ[0]
+        dataListY = dataListXYZ[1]
+        dataListZ = dataListXYZ[2]
+        # for i in range(1, 100):
+        end = time.time()
+
+        ts.append(end - start)
+        xs.append(dataListX)
+        ys.append(dataListY)
+        zs.append(dataListZ)
+
+        ts_s = np.array(ts)
+        xs_s = np.array(xs)
+        ys_s = np.array(ys)
+        zs_s = np.array(zs)
+
+        # if len(ts) > 3:
+        ts_smooth.extend(np.linspace(ts_s[0], ts_s[-1], 10))
+        # xs_smooth.extend(np.linspace(xs[-1], dataListX, 100))
+        # ys_smooth.extend(np.linspace(ys[-1], dataListY, 100))
+        # zs_smooth.extend(np.linspace(zs[-1], dataListZ, 100))
+
+        xs_smooth = spline(ts, xs, ts_smooth)
+        ys_smooth = spline(ts, ys, ts_smooth)
+        zs_smooth = spline(ts, zs, ts_smooth)
+
+        print(ts_smooth, xs_smooth)
+    # else:
+
+
+        ts_smooth = ts
+        xs_smooth = xs
+        ys_smooth = ys
+        zs_smooth = zs
+
+
+
+        # if len(ts) > 10:
+        # ts.pop(0)
+        # xs.pop(0)
+        # ys.pop(0)
+        # zs.pop(0)
+
+        # print(xs[-1])
+
+        # Move the axis
+        # x_axis_start += ts[-1]
+        # x_axis_end += ts[-1]
+        # print(x_axis_start, x_axis_end)
+
+
+def animate(self):
+
+    # Animate
+    u = SensorPlot()
+    u.update(ts, xs, ys, zs, ts_smooth, xs_smooth, ys_smooth, zs_smooth, start)
+
+    # Move the axis
+
+    xmin, xmax = sensor_plot.get_xlim()
+
+    if ts[-1] > (xmax+1):
+        sensor_plot.set_xlim(xmin+1, xmax+1)
+        sensor_plot.figure.canvas.draw()
+
+    # Actually plot
+    # line1 = sensor_plot.plot(ts_smooth, xs_smooth, 'r', ts_smooth, ys_smooth, 'g', ts_smooth, zs_smooth, 'b')
+    # line2 = sensor_plot.plot(ts, xs)
+    line1 = sensor_plot.plot(ts_smooth, xs_smooth)
+    #
+
+    # print('listening data on port %s...' % PORT)
+
+if __name__ == "__main__":
+    #Animate
+    ani = animation.FuncAnimation(fig, animate, interval=100)
+    plt.show()

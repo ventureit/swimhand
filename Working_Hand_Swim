@@ -1,0 +1,75 @@
+import serial
+import matplotlib.pyplot as plt
+import numpy as np
+import time
+import sys
+port = 'COM6'
+
+baudrate = 115200
+import warnings
+warnings.filterwarnings("ignore", ".*GUI is implemented.*")
+
+plt.ion()
+length = 1000
+lowest_y_coordinate = 0
+highest_y_coordinate = 800
+x = [0]*length             #create empty variable of length of test
+y = [0]*length
+z = [0]*length
+
+xline, = plt.plot(x)
+yline, = plt.plot(y)
+zline, = plt.plot(z)
+plt.ylim([lowest_y_coordinate, 10000])
+
+if len(sys.argv) == 3:
+    arduino = serial.Serial(sys.argv[1], sys.argv[2])
+else:
+    print('# Using port: ' + port + " and baudrate" + str(baudrate))
+    arduino = serial.Serial(port, baudrate)
+
+def redraw_figure():
+    plt.gcf().canvas.flush_events()
+    plt.show(block=False)
+    plt.show(block=False)
+
+for i in range(10000):
+    data = arduino.readline()
+    data = data.decode('utf-8')
+    sep = data.split()
+
+    if np.size(sep) == 3:
+        x.append(int(sep[0])) # add new value as int to current list
+        y.append(int(sep[1]))
+        z.append(int(sep[2]))
+
+        'Removes the created parameter'
+        del x[0]
+        del y[0]
+        del z[0]
+
+    xline.set_xdata(np.arange(len(x))) #sets xdata to new list length
+    yline.set_xdata(np.arange(len(x)))  # sets xdata to new list length
+    zline.set_xdata(np.arange(len(x)))  # sets xdata to new list length
+    xline.set_ydata(x)
+    yline.set_ydata(y)
+    zline.set_ydata(z)
+    # zline.set_xdata(np.arange(len(z)))
+
+
+# def velocity(x):
+#     velo = np.zeros(size(x))
+#     # plt.pause(1e-5)                   #in seconds
+
+    plt.xlim([0, len(x)])
+    redraw_figure()
+    print(x[0], y[0], z[0])
+
+
+
+
+
+
+    # arduino_binary = arduino.readline()
+    # sys.stdout.write(str(arduino_binary))
+    # sys.stdout.flush()
